@@ -392,7 +392,7 @@ export const handlers: ToolHandlerMap = {
       return { content: [{ type: 'text', text: 'Error: provide either fromCannedServiceId or name' }], isError: true };
     }
     const body = pickFields(args, ADD_SERVICE_FIELDS);
-    const data = await shopmonkeyRequest<Service>('POST', `/order/${sanitizePathParam(String(args.orderId))}/service`, body);
+    const data = await shopmonkeyRequest<Service[]>('POST', `/order/${sanitizePathParam(String(args.orderId))}/service`, [body] as unknown as Record<string, unknown>);
     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
   },
 

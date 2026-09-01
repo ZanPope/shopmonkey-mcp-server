@@ -297,10 +297,33 @@ describe('Mock API — Labor & Users', () => {
   beforeEach(() => { process.env.SHOPMONKEY_API_KEY = 'test-key-123'; });
   afterEach(() => { globalThis.fetch = originalFetch; delete process.env.SHOPMONKEY_API_KEY; });
 
-  it('list_labor filters by orderId', async () => {
+  // Labor is nested under order > service in Shopmonkey's real API (no flat /labor route).
+  it('list_labor sends GET /order/{orderId}/service/{serviceId}/labor', async () => {
     setupMock(mockSuccess([{ id: 'lab-1' }]));
-    await labor.handlers.list_labor({ orderId: 'ord-1' });
-    assert.ok(capturedRequests[0].url.includes('orderId=ord-1'));
+    await labor.handlers.list_labor({ orderId: 'ord-1', serviceId: 'svc-1' });
+    assert.ok(capturedRequests[0].url.includes('/order/ord-1/service/svc-1/labor'));
+  });
+
+  it('list_labor errors without serviceId', async () => {
+    const result = await labor.handlers.list_labor({ orderId: 'ord-1' });
+    assert.ok(result.isError);
+  });
+
+  it('assign_technician sends PUT /order/{orderId}/service/{serviceId}/labor/{laborId} with technicianId', async () => {
+    setupMock(mockSuccess({ id: 'lab-1', technicianId: 'tech-1' }));
+    const result = await labor.handlers.assign_technician({
+      orderId: 'ord-1', serviceId: 'svc-1', laborId: 'lab-1', technicianId: 'tech-1',
+    });
+    assert.equal(capturedRequests[0].method, 'PUT');
+    assert.ok(capturedRequests[0].url.includes('/order/ord-1/service/svc-1/labor/lab-1'));
+    const body = JSON.parse(capturedRequests[0].body!);
+    assert.equal(body.technicianId, 'tech-1');
+    assert.ok(!result.isError);
+  });
+
+  it('assign_technician errors without technicianId', async () => {
+    const result = await labor.handlers.assign_technician({ orderId: 'ord-1', serviceId: 'svc-1', laborId: 'lab-1' });
+    assert.ok(result.isError);
   });
 
   it('list_timeclock filters by userId and date range', async () => {
@@ -321,10 +344,11 @@ describe('Mock API — Services', () => {
   beforeEach(() => { process.env.SHOPMONKEY_API_KEY = 'test-key-123'; });
   afterEach(() => { globalThis.fetch = originalFetch; delete process.env.SHOPMONKEY_API_KEY; });
 
-  it('list_services filters by orderId', async () => {
+  // Services are nested under order in Shopmonkey's real API (no flat /service?orderId= route).
+  it('list_services sends GET /order/{orderId}/service when orderId is given', async () => {
     setupMock(mockSuccess([{ id: 'svc-1' }]));
     await services.handlers.list_services({ orderId: 'ord-1' });
-    assert.ok(capturedRequests[0].url.includes('orderId=ord-1'));
+    assert.ok(capturedRequests[0].url.includes('/order/ord-1/service'));
   });
 
   it('list_canned_services sends GET /canned_service', async () => {

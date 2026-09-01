@@ -22,6 +22,21 @@ export const definitions: Tool[] = [
     },
   },
   {
+    name: 'add_service_to_order',
+    description: 'Add a service to a work order. Pass fromCannedServiceId to copy an existing canned service template (its labor, parts, fees, etc.) onto the order in one call, or pass name/note/pricing to create a custom one-off service instead.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        orderId: { type: 'string', description: 'The work order ID to add the service to' },
+        fromCannedServiceId: { type: 'string', description: 'ID of an existing canned service template to copy onto the order (labor/parts/fees included)' },
+        name: { type: 'string', description: 'Service name (required if not using fromCannedServiceId)' },
+        note: { type: 'string', description: 'Additional notes for the service' },
+        pricing: { type: 'string', enum: ['FixedPrice', 'LineItem'], description: 'Pricing model for a custom service' },
+      },
+      required: ['orderId'],
+    },
+  },
+  {
     name: 'list_canned_services',
     description: 'List pre-built canned service templates from Shopmonkey. These are reusable service templates that can be added to work orders.',
     inputSchema: {
@@ -368,7 +383,19 @@ function applyDefaultLocation(params: Record<string, string>): void {
   }
 }
 
+const ADD_SERVICE_FIELDS = ['fromCannedServiceId', 'name', 'note', 'pricing'];
+
 export const handlers: ToolHandlerMap = {
+  async add_service_to_order(args) {
+    if (!args.orderId) return { content: [{ type: 'text', text: 'Error: orderId is required' }], isError: true };
+    if (!args.fromCannedServiceId && !args.name) {
+      return { content: [{ type: 'text', text: 'Error: provide either fromCannedServiceId or name' }], isError: true };
+    }
+    const body = pickFields(args, ADD_SERVICE_FIELDS);
+    const data = await shopmonkeyRequest<Service>('POST', `/order/${sanitizePathParam(String(args.orderId))}/service`, body);
+    return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+  },
+
   // ── Existing handlers ─────────────────────────────────────────────────────
   async list_services(args) {
     const params: Record<string, string> = {};

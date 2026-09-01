@@ -398,8 +398,17 @@ export const handlers: ToolHandlerMap = {
 
   // ── Existing handlers ─────────────────────────────────────────────────────
   async list_services(args) {
+    // Shopmonkey's API nests services under their order (no flat /service?orderId= route),
+    // so when an orderId is given we hit the nested route instead.
+    if (args.orderId !== undefined) {
+      const params: Record<string, string> = {};
+      if (args.limit !== undefined) params.limit = String(args.limit);
+      if (args.skip !== undefined) params.skip = String(args.skip);
+      const data = await shopmonkeyRequest<Service[]>('GET', `/order/${sanitizePathParam(String(args.orderId))}/service`, undefined, params);
+      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+    }
+
     const params: Record<string, string> = {};
-    if (args.orderId !== undefined) params.orderId = String(args.orderId);
     if (args.locationId !== undefined) params.locationId = String(args.locationId);
     if (args.limit !== undefined) params.limit = String(args.limit);
     if (args.skip !== undefined) params.skip = String(args.skip);

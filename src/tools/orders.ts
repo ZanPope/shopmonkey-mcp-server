@@ -41,6 +41,7 @@ export const definitions: Tool[] = [
         status: { type: 'string', enum: ['Estimate', 'RepairOrder', 'Invoice'], description: 'Initial order status' },
         locationId: { type: 'string', description: 'Location ID for multi-location shops. Defaults to SHOPMONKEY_LOCATION_ID env var if set.' },
         name: { type: 'string', description: 'Order title/name shown on the work order (e.g. "Rental Hut PM")' },
+        workflowStatusId: { type: 'string', description: 'Workflow/pipeline stage ID to place the order in (from list_workflow_statuses). Optional — Shopmonkey will use a default lane for the given status if omitted.' },
       },
     },
   },
@@ -55,14 +56,15 @@ export const definitions: Tool[] = [
         customerId: { type: 'string', description: 'New customer ID' },
         vehicleId: { type: 'string', description: 'New vehicle ID' },
         name: { type: 'string', description: 'New order title/name' },
+        workflowStatusId: { type: 'string', description: 'Move the order to this workflow/pipeline stage ID (from list_workflow_statuses)' },
       },
       required: ['id'],
     },
   },
 ];
 
-const UPDATE_FIELDS = ['status', 'customerId', 'vehicleId', 'name'];
-const CREATE_FIELDS = ['customerId', 'vehicleId', 'status', 'locationId', 'name'];
+const UPDATE_FIELDS = ['status', 'customerId', 'vehicleId', 'name', 'workflowStatusId'];
+const CREATE_FIELDS = ['customerId', 'vehicleId', 'status', 'locationId', 'name', 'workflowStatusId'];
 
 function applyDefaultLocation(params: Record<string, string>): void {
   if (!params.locationId) {
